@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+
+
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+
+
+
+
+
+
+
+            <TimePicker
+                android:layout_width="290dp"
+                android:layout_height="130dp"
+                android:id="@+id/timePicker"
+                android:timePickerMode="spinner"
+                android:layout_marginTop="330dp"
+                android:layout_marginLeft="51dp"
+
+
+                />
+
+            <DatePicker
+                android:layout_width="290dp"
+
+                android:id="@+id/datePicker"
+                android:layout_height="150dp"
+                android:datePickerMode="spinner"
+                android:calendarViewShown="false"
+                android:layout_marginTop="190dp"
+                android:layout_marginLeft="51dp"
+
+
+                />
+
+
+            <Button
+                android:id="@+id/buttonAlarm"
+                android:layout_width="200dp"
+                android:layout_height="50dp"
+                android:layout_marginTop="508dp"
+                android:layout_marginLeft="104dp"
+                android:text="Set Reminder"
+                android:textSize="18sp" />
+
+            <Button
+                android:id="@+id/cancelAlarmBtn"
+                android:layout_width="200dp"
+                android:layout_height="50dp"
+                android:text="Cancel Reminder"
+                android:textSize="15sp"
+                android:layout_marginTop="570dp"
+                android:layout_marginLeft="104dp" />
+
+
+
+
+            <com.google.android.material.textfield.TextInputLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:paddingHorizontal="20dp"
+                android:layout_marginTop="20dp"
+                style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox.Dense">
+
+                <com.google.android.material.textfield.TextInputEditText
+                    android:id="@+id/messageET"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:hint="@string/message" />
+            </com.google.android.material.textfield.TextInputLayout>
+
+
+        </RelativeLayout>
+
+
