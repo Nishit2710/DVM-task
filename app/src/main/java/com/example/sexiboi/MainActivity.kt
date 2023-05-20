@@ -1,146 +1,144 @@
-package com.example.sexiboi
-
 import android.app.AlarmManager
-import android.app.AlertDialog
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
-
+import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.os.Build
-import android.os.Bundle
-import android.widget.Toast
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
-import com.example.sexiboi.databinding.ActivityMainBinding
-import com.google.android.material.timepicker.MaterialTimePicker
-import com.google.android.material.timepicker.TimeFormat
+import android.os.Bundle
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.widget.BaseAdapter
+import android.widget.Button
+import android.widget.ListView
+import android.widget.TextView
+import java.text.SimpleDateFormat
+import com.example.sexiboi.R
 import java.util.*
 
 class MainActivity : AppCompatActivity() {
-
-    private lateinit var binding: ActivityMainBinding
-    private lateinit var picker: MaterialTimePicker
-    private lateinit var calendar:Calendar
-
-
+    private lateinit var reminderList: ArrayList<Reminder>
+    private lateinit var adapter: ReminderAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        calendar = Calendar.getInstance()
-        binding = ActivityMainBinding.inflate(layoutInflater)
+        setContentView(R.layout.activity_main)
 
-        setContentView(binding.root)
+        reminderList = ArrayList()
+        adapter = ReminderAdapter(this, reminderList)
+
+        val listView: ListView = findViewById(R.id.listView)
+        listView.adapter = adapter
+
+        val addReminderButton: Button = findViewById(R.id.addReminderButton)
+        addReminderButton.setOnClickListener {
+            val intent = Intent(this, `AddReminderActivity`::class.java)
+            startActivityForResult(intent, ADD_REMINDER_REQUEST_CODE)
+        }
+
         createNotificationChannel()
-
-
-
-
-        binding.timePicker.setOnClickListener {
-
-
-
-
-
-        }
-
-        binding.buttonAlarm.setOnClickListener {
-
-
-            scheduleNotification()
-
-
-
-        }
-
-
-
-
     }
 
+    private fun createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= 31) {
+            val name = resources.getString(R.string.channel_name)
+            val descriptionText = resources.getString(R.string.channel_description)
+            val importance = NotificationManager.IMPORTANCE_DEFAULT
+            val channel = NotificationChannel(CHANNEL_ID, name, importance).apply {
+                description = descriptionText
+            }
 
-
-
-
-
-
-    private fun scheduleNotification()
-    {
-        val intent = Intent(applicationContext,AlarmReciever::class.java)
-
-        val message = binding.messageET.tag.toString()
-
-        intent.putExtra(messageExtra,message)
-
-        val pendingIntent= PendingIntent.getBroadcast(
-
-            applicationContext,
-            notificationID,
-
-
-            intent,PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-
-        )
-
-        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val time = getTime()
-        alarmManager.setAndAllowWhileIdle(
-            AlarmManager.RTC_WAKEUP,
-            time,
-            pendingIntent
-        )
-       showAlert(time,message)
-    }
-
-    private fun showAlert(time: Long,  message: String) {
-
-
-
-        val date = Date(time)
-        val dateFormat = android.text.format.DateFormat.getLongDateFormat(applicationContext)
-        val timeFormat = android.text.format.DateFormat.getTimeFormat(applicationContext)
-
-        AlertDialog.Builder(this)
-            .setTitle("Notification Scheduled")
-            .setMessage(
-                "Title:"+ title +
-                        "\nMessage:" + message +
-                        "\nAt:"+dateFormat.format(date) + " " + timeFormat.format(date)
-            )
-            .setPositiveButton("Okay"){_,_ ->}
-
-
-    }
-
-
-    private fun getTime(): Long {
-
-        val minute = binding.timePicker.minute
-        val hour = binding.timePicker.hour
-        val day = binding.datePicker.dayOfMonth
-        val month = binding.datePicker.month
-        val year =  binding.datePicker.year
-
-        val calendar = Calendar.getInstance()
-        calendar.set(year,month,day,hour,minute)
-        return calendar.timeInMillis
-
-    }
-
-
-    private fun createNotificationChannel(){
-
-
-            val name : CharSequence = "Sexiboi Reminder Channel"
-            val description = "Channel for Alarm Manager"
-            val importance = NotificationManager.IMPORTANCE_HIGH
-            val channel = NotificationChannel("sexiboi",name,importance)
-            channel.description = description
-            val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
+            val notificationManager: NotificationManager =
+                getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
             notificationManager.createNotificationChannel(channel)
         }
-
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
 
+        if (requestCode == ADD_REMINDER_REQUEST_CODE && resultCode == RESULT_OK) {
+            val title = data?.getStringExtra(`AddReminderActivity`.EXTRA_TITLE)
+            val date = data?.getLongExtra(`AddReminderActivity`.EXTRA_DATE, 0)
+
+            if (title != null && date != null) {
+                val reminder = Reminder(title, Date(date))
+                reminderList.add(reminder)
+                adapter.notifyDataSetChanged()
+
+                scheduleNotification(reminder)
+            }
+        }
+    }
+
+    private fun scheduleNotification(reminder: Reminder) {
+        val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        val intent = Intent(this, ReminderBroadcastReceiver::class.java)
+        intent.putExtra(EXTRA_TITLE, reminder.title)
+        val pendingIntent = PendingIntent.getBroadcast(
+            this,
+            0,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        alarmManager.set(AlarmManager.RTC_WAKEUP, reminder.date.time, pendingIntent)
+    }
+
+    companion object {
+        const val ADD_REMINDER_REQUEST_CODE = 1
+        const val CHANNEL_ID = "reminder_channel"
+        const val EXTRA_TITLE = "extra_title"
+    }
+}
+
+class ReminderAdapter(private val context: Context, private val reminderList: ArrayList<Reminder>) :
+    BaseAdapter() {
+
+    private val inflater: LayoutInflater =
+        context.getSystemService(Context.LAYOUT_INFLATER_SERVICE) as LayoutInflater
+
+    override fun getCount(): Int {
+        return reminderList.size
+    }
+
+    override fun getItem(position: Int): Any {
+        return reminderList[position]
+    }
+
+    override fun getItemId(position: Int): Long {
+        return position.toLong()
+    }
+
+    override fun getView(position: Int, convertView: View?, parent: ViewGroup?): View {
+        val view = inflater.inflate(R.layout.reminder_item, null)
+
+        val titleTextView: TextView = view.findViewById(R.id.titleTextView)
+        val dateTextView: TextView = view.findViewById(R.id.dateTextView)
+
+        val reminder = reminderList[position]
+
+        titleTextView.text = reminder.title
+
+        val dateFormat = SimpleDateFormat("dd MMM yyyy HH:mm", Locale.getDefault())
+        val dateString = dateFormat.format(reminder.date)
+        dateTextView.text = dateString
+
+        return view
+    }
+}
+
+data class Reminder(val title: String, val date: Date)
+
+class ReminderBroadcastReceiver : BroadcastReceiver() {
+    override fun onReceive(context: Context, intent: Intent) {
+        val title = intent.getStringExtra(MainActivity.EXTRA_TITLE)
+        if (title != null) {
+            // Display notification here
+        }
+    }
+}
